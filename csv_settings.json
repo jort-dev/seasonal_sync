@@ -1,0 +1,45 @@
+{
+    "orColumns": [
+        [
+            "Januari",
+            "Februari",
+            "Maart",
+            "April",
+            "Mei",
+            "Juni",
+            "Juli",
+            "Augustus",
+            "September",
+            "Oktober",
+            "November",
+            "December"
+        ]
+    ],
+    "inverseColumns": [
+        "Dirty-Fifteen"
+    ],
+    "descriptionPairs": [
+        [
+            "Folliculair",
+            "Folliculair_reden"
+        ],
+        [
+            "Ovulatie",
+            "Ovulatie_reden"
+        ],
+        [
+            "Luteale",
+            "Luteale_reden"
+        ],
+        [
+            "Menstruatie",
+            "Menstruatie_reden"
+        ]
+    ],
+    "filterRows": [
+        "Folliculair",
+        "Ovulatie",
+        "Luteale",
+        "Menstruatie"
+    ]
+}

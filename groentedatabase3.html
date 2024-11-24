@@ -1,0 +1,271 @@
+<!-- https://chatgpt.com/share/e/674248fd-07d4-800e-ad4b-379113d2ac69 -->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Product List</title>
+  <style>
+    /* Basic CSS styles */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    #filters {
+      margin-bottom: 20px;
+    }
+    .filter-button {
+      padding: 8px 12px;
+      margin: 5px;
+      border: none;
+      cursor: pointer;
+    }
+    .filter-button.active {
+      background-color: #4CAF50;
+      color: white;
+    }
+    .filter-button.inactive {
+      background-color: #e7e7e7;
+      color: black;
+    }
+    .filter-dropdown {
+      margin: 5px;
+    }
+    #toggleDetails {
+      margin-bottom: 20px;
+    }
+    #productList {
+      list-style-type: none;
+      padding: 0;
+    }
+    #productList li {
+      margin: 10px 0;
+    }
+    .details {
+      display: none;
+    }
+    .show-details .details {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div id="filters">
+    <!-- Filters will be dynamically generated here -->
+  </div>
+  <button id="toggleDetails">Show Details</button>
+  <ul id="productList">
+    <!-- Product list will be dynamically generated here -->
+  </ul>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      let data = [];
+      let filters = {};
+      let columnTypes = {};
+      let showDetails = false;
+
+      // Load filters from localStorage
+      if (localStorage.getItem('filters')) {
+        filters = JSON.parse(localStorage.getItem('filters'));
+      }
+
+      // Fetch and parse CSV data
+      fetch('data.csv')
+        .then(response => response.text())
+        .then(csvText => {
+          data = parseCSV(csvText);
+          determineColumnTypes();
+          generateFilters();
+          renderProductList();
+        })
+        .catch(error => console.error('Error fetching CSV:', error));
+
+      // Parse CSV text into array of objects
+      function parseCSV(text) {
+        const lines = text.trim().split('\n');
+        const headers = lines[0].split(';').map(h => h.trim());
+        const rows = lines.slice(1);
+        const result = rows.map(line => {
+          const values = line.split(';').map(v => v.trim());
+          const obj = {};
+          headers.forEach((header, index) => {
+            obj[header] = values[index];
+          });
+          return obj;
+        });
+        return result;
+      }
+
+      // Determine column types (boolean or multi-valued)
+      function determineColumnTypes() {
+        const uniqueValues = {};
+        data.forEach(item => {
+          for (let key in item) {
+            if (!uniqueValues[key]) uniqueValues[key] = new Set();
+            let value = item[key];
+            if (value !== '') {
+              uniqueValues[key].add(value);
+            }
+          }
+        });
+        for (let key in uniqueValues) {
+          const values = Array.from(uniqueValues[key]);
+          if (values.every(v => v === '1' || v === '0' || v === '')) {
+            columnTypes[key] = 'boolean';
+          } else if (values.length > 0) {
+            columnTypes[key] = 'multi';
+          }
+        }
+      }
+
+      // Generate filters dynamically
+      function generateFilters() {
+        const filtersDiv = document.getElementById('filters');
+        filtersDiv.innerHTML = '';
+
+        for (let key in columnTypes) {
+          if (key === 'Product' || key === 'emoji') continue;
+          let prettyName = toTitleCase(key);
+          if (columnTypes[key] === 'boolean') {
+            const button = document.createElement('button');
+            button.className = 'filter-button';
+            button.textContent = prettyName;
+            button.dataset.key = key;
+            button.addEventListener('click', toggleFilter);
+            if (filters[key]) {
+              button.classList.add('active');
+            } else {
+              button.classList.add('inactive');
+            }
+            filtersDiv.appendChild(button);
+          } else if (columnTypes[key] === 'multi') {
+            const select = document.createElement('select');
+            select.className = 'filter-dropdown';
+            select.dataset.key = key;
+
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = prettyName;
+            select.appendChild(option);
+
+            const values = getUniqueValuesForColumn(key);
+            values.forEach(value => {
+              const opt = document.createElement('option');
+              opt.value = value;
+              opt.textContent = prettyName + ': ' + value;
+              select.appendChild(opt);
+            });
+            if (filters[key]) {
+              select.value = filters[key];
+            }
+            select.addEventListener('change', applyFilter);
+            filtersDiv.appendChild(select);
+          }
+        }
+      }
+
+      // Get unique values for a column
+      function getUniqueValuesForColumn(column) {
+        const values = new Set();
+        data.forEach(item => {
+          if (item[column] !== '') {
+            values.add(item[column]);
+          }
+        });
+        return Array.from(values);
+      }
+
+      // Toggle filter for boolean columns
+      function toggleFilter(event) {
+        const key = event.target.dataset.key;
+        if (filters[key]) {
+          delete filters[key];
+          event.target.classList.remove('active');
+          event.target.classList.add('inactive');
+        } else {
+          filters[key] = true;
+          event.target.classList.remove('inactive');
+          event.target.classList.add('active');
+        }
+        saveFilters();
+        renderProductList();
+      }
+
+      // Apply filter for multi-valued columns
+      function applyFilter(event) {
+        const key = event.target.dataset.key;
+        const value = event.target.value;
+        if (value) {
+          filters[key] = value;
+        } else {
+          delete filters[key];
+        }
+        saveFilters();
+        renderProductList();
+      }
+
+      // Save filters to localStorage
+      function saveFilters() {
+        localStorage.setItem('filters', JSON.stringify(filters));
+      }
+
+      // Render the product list based on filters
+      function renderProductList() {
+        const productList = document.getElementById('productList');
+        productList.innerHTML = '';
+
+        let filteredData = data.filter(item => {
+          for (let key in filters) {
+            if (columnTypes[key] === 'boolean') {
+              if (item[key] !== '1') {
+                return false;
+              }
+            } else if (columnTypes[key] === 'multi') {
+              if (item[key] !== filters[key]) {
+                return false;
+              }
+            }
+          }
+          return true;
+        });
+
+        filteredData.forEach(item => {
+          const li = document.createElement('li');
+          li.className = showDetails ? 'show-details' : '';
+
+          const content = document.createElement('div');
+          content.textContent = item['Product'] + ' ' + item['emoji'];
+          li.appendChild(content);
+
+          if (showDetails) {
+            const details = document.createElement('div');
+            details.className = 'details';
+            for (let key in item) {
+              if (key !== 'Product' && key !== 'emoji' && item[key]) {
+                const detail = document.createElement('div');
+                detail.textContent = toTitleCase(key) + ': ' + item[key];
+                details.appendChild(detail);
+              }
+            }
+            li.appendChild(details);
+          }
+          productList.appendChild(li);
+        });
+      }
+
+      // Toggle details
+      document.getElementById('toggleDetails').addEventListener('click', function() {
+        showDetails = !showDetails;
+        this.textContent = showDetails ? 'Hide Details' : 'Show Details';
+        renderProductList();
+      });
+
+      // Helper function to convert to Title Case
+      function toTitleCase(str) {
+        return str.replace(/\b\w/g, function(txt) {
+          return txt.toUpperCase();
+        });
+      }
+    });
+  </script>
+</body>
+</html>

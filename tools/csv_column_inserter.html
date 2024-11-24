@@ -1,0 +1,170 @@
+<!-- https://chatgpt.com/share/e/6742494f-fb2c-800e-9901-18b6e2a0ef8e -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Column Inserter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        textarea, input, select, button {
+            margin: 10px 0;
+            padding: 10px;
+            width: 100%;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        .warning {
+            color: red;
+            font-weight: bold;
+        }
+        .controls {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>CSV Column Inserter</h1>
+    <div>
+        <label for="separator">Select CSV Separator:</label>
+        <select id="separator">
+            <option value=",">Comma (,)</option>
+            <option value=";">Semicolon (;)</option>
+            <option value="|">Pipe (|)</option>
+        </select>
+    </div>
+    <div>
+        <label for="csv-input">Upload or Paste CSV:</label>
+        <textarea id="csv-input" rows="10" placeholder="Paste your CSV data here..."></textarea>
+        <input type="file" id="file-upload" accept=".csv">
+    </div>
+    <div>
+        <label for="insert-column">Column Contents to Insert:</label>
+        <textarea id="insert-column" rows="5" placeholder="Enter column contents..."></textarea>
+    </div>
+    <div>
+        <label for="column-index">Column Index to Insert:</label>
+        <input type="number" id="column-index" placeholder="Enter column index (0-based)">
+    </div>
+    <div class="controls">
+        <button id="process-csv">Process CSV</button>
+        <button id="copy-output">Copy Output</button>
+        <button id="clear-all">Clear All</button>
+    </div>
+    <div>
+        <h3>Output:</h3>
+        <textarea id="csv-output" rows="10" readonly></textarea>
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const separatorSelect = document.getElementById("separator");
+            const csvInput = document.getElementById("csv-input");
+            const insertColumn = document.getElementById("insert-column");
+            const columnIndex = document.getElementById("column-index");
+            const csvOutput = document.getElementById("csv-output");
+            const fileUpload = document.getElementById("file-upload");
+
+            // Load saved settings
+            const savedSeparator = localStorage.getItem("separator");
+            if (savedSeparator) separatorSelect.value = savedSeparator;
+
+            const savedCsv = localStorage.getItem("csv");
+            if (savedCsv) csvInput.value = savedCsv;
+
+            const savedInsertColumn = localStorage.getItem("insertColumn");
+            if (savedInsertColumn) insertColumn.value = savedInsertColumn;
+
+            const savedColumnIndex = localStorage.getItem("columnIndex");
+            if (savedColumnIndex) columnIndex.value = savedColumnIndex;
+
+            // Save to localStorage on input
+            separatorSelect.addEventListener("change", () => {
+                localStorage.setItem("separator", separatorSelect.value);
+            });
+            csvInput.addEventListener("input", () => {
+                localStorage.setItem("csv", csvInput.value);
+            });
+            insertColumn.addEventListener("input", () => {
+                localStorage.setItem("insertColumn", insertColumn.value);
+            });
+            columnIndex.addEventListener("input", () => {
+                localStorage.setItem("columnIndex", columnIndex.value);
+            });
+
+            // Handle CSV file upload
+            fileUpload.addEventListener("change", (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        csvInput.value = event.target.result;
+                        localStorage.setItem("csv", csvInput.value);
+                    };
+                    reader.readAsText(file);
+                }
+            });
+
+            // Process CSV
+            document.getElementById("process-csv").addEventListener("click", () => {
+                const separator = separatorSelect.value;
+                const csv = csvInput.value;
+                const columnData = insertColumn.value.split("\n");
+                const index = parseInt(columnIndex.value);
+
+                if (!csv || isNaN(index)) {
+                    alert("Please provide valid CSV data and a column index.");
+                    return;
+                }
+
+                const rows = csv.split("\n").map(row => row.split(separator));
+
+                if (rows.length !== columnData.length) {
+                    const confirmResult = confirm("The number of rows in the column to insert does not match the CSV rows. Do you want to proceed?");
+                    if (!confirmResult) return;
+                }
+
+                const result = rows.map((row, i) => {
+                    const valueToInsert = columnData[i] || "";
+                    row.splice(index, 0, valueToInsert);
+                    return row.join(separator);
+                });
+
+                csvOutput.value = result.join("\n");
+            });
+
+            // Copy output
+            document.getElementById("copy-output").addEventListener("click", () => {
+                csvOutput.select();
+                document.execCommand("copy");
+                alert("Output copied to clipboard!");
+            });
+
+            // Clear all fields
+            document.getElementById("clear-all").addEventListener("click", () => {
+                if (confirm("Are you sure you want to clear all fields?")) {
+                    csvInput.value = "";
+                    insertColumn.value = "";
+                    columnIndex.value = "";
+                    csvOutput.value = "";
+                    localStorage.removeItem("csv");
+                    localStorage.removeItem("insertColumn");
+                    localStorage.removeItem("columnIndex");
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,331 @@
+<!-- https://chatgpt.com/share/e/67424915-99bc-800e-9be0-c205a94fd455 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Product List</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .filters {
+            margin-bottom: 20px;
+        }
+        .filter-group {
+            margin-bottom: 10px;
+        }
+        .filter-group label {
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        .buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .buttons button {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: gray;
+            color: white;
+        }
+        .buttons button.active {
+            background-color: #007BFF;
+        }
+        .dropdowns select {
+            padding: 5px;
+            margin-right: 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        .product-list {
+            list-style: none;
+            padding: 0;
+        }
+        .product-item {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+        .product-header {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .product-header .emoji {
+            font-size: 24px;
+            margin-right: 10px;
+        }
+        .product-details {
+            display: none;
+            margin-top: 10px;
+        }
+        .product-item.expanded .product-details {
+            display: block;
+        }
+        .product-details table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .product-details th, .product-details td {
+            border: 1px solid #ccc;
+            padding: 5px;
+            text-align: left;
+        }
+        .product-details th {
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Product List</h1>
+
+    <div class="filters">
+        <div class="filter-group buttons" id="boolean-filters">
+            <!-- Boolean filters as buttons will be inserted here -->
+        </div>
+        <div class="filter-group dropdowns" id="dropdown-filters">
+            <!-- Dropdown filters will be inserted here -->
+        </div>
+    </div>
+
+    <ul class="product-list" id="product-list">
+        <!-- Product items will be inserted here -->
+    </ul>
+
+    <script>
+        // Configuration: specify which columns are boolean and which have multiple options
+        const config = {
+            booleanFilters: ['Groente', 'FODMAP', 'FODMAP-light', 'Dirty-Fifteen'],
+            dropdownFilters: {
+                // key: column name, options: array of possible values
+                'Soort': [], // will be filled dynamically
+                'Menstrual cycle phase': ['Follicular', 'Ovulatory', 'Luteal', 'Menstrual'],
+                'Month': ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni', 'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December']
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchCSV('data.csv').then(data => {
+                const headers = data[0];
+                const rows = data.slice(1).map(row => {
+                    let obj = {};
+                    headers.forEach((header, index) => {
+                        obj[header.trim()] = row[index].trim();
+                    });
+                    return obj;
+                });
+
+                // Dynamically determine dropdown options for 'Soort' if needed
+                const soorten = [...new Set(rows.map(row => row['Soort']).filter(val => val))];
+                config.dropdownFilters['Soort'] = soorten;
+
+                // Initialize filters
+                const filters = loadFilters();
+                renderFilters(headers, filters);
+                applyFiltersAndRender(rows, filters);
+
+                // Add event listeners for filters
+                setupFilterEventListeners(headers, rows);
+            }).catch(error => {
+                console.error('Error fetching or parsing CSV:', error);
+            });
+        });
+
+        // Function to fetch and parse CSV
+        async function fetchCSV(url) {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Network response was not ok');
+            const text = await response.text();
+            return parseCSV(text);
+        }
+
+        // Simple CSV parser assuming semicolon delimiter and no quoted fields
+        function parseCSV(text) {
+            const lines = text.trim().split('\n');
+            return lines.map(line => line.split(';'));
+        }
+
+        // Function to load filters from localStorage
+        function loadFilters() {
+            const saved = localStorage.getItem('productFilters');
+            return saved ? JSON.parse(saved) : { boolean: {}, dropdown: {} };
+        }
+
+        // Function to save filters to localStorage
+        function saveFilters(filters) {
+            localStorage.setItem('productFilters', JSON.stringify(filters));
+        }
+
+        // Function to render filters
+        function renderFilters(headers, filters) {
+            // Render boolean filters as buttons
+            const booleanContainer = document.getElementById('boolean-filters');
+            config.booleanFilters.forEach(filter => {
+                const btn = document.createElement('button');
+                btn.textContent = filter;
+                btn.dataset.filter = filter;
+                if (filters.boolean[filter]) {
+                    btn.classList.add('active');
+                }
+                booleanContainer.appendChild(btn);
+            });
+
+            // Render dropdown filters
+            const dropdownContainer = document.getElementById('dropdown-filters');
+            for (const [filter, options] of Object.entries(config.dropdownFilters)) {
+                const label = document.createElement('label');
+                label.textContent = filter + ': ';
+                const select = document.createElement('select');
+                select.dataset.filter = filter;
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = 'All';
+                select.appendChild(defaultOption);
+                options.forEach(option => {
+                    const opt = document.createElement('option');
+                    opt.value = option;
+                    opt.textContent = option;
+                    select.appendChild(opt);
+                });
+                // Set saved value
+                if (filters.dropdown[filter]) {
+                    select.value = filters.dropdown[filter];
+                }
+                label.appendChild(select);
+                dropdownContainer.appendChild(label);
+            }
+        }
+
+        // Function to setup filter event listeners
+        function setupFilterEventListeners(headers, rows) {
+            // Boolean filter buttons
+            const booleanContainer = document.getElementById('boolean-filters');
+            booleanContainer.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON') {
+                    const filter = e.target.dataset.filter;
+                    e.target.classList.toggle('active');
+                    const filters = loadFilters();
+                    if (filters.boolean[filter]) {
+                        delete filters.boolean[filter];
+                    } else {
+                        filters.boolean[filter] = true;
+                    }
+                    saveFilters(filters);
+                    applyFiltersAndRender(rows, filters);
+                }
+            });
+
+            // Dropdown filters
+            const dropdownContainer = document.getElementById('dropdown-filters');
+            dropdownContainer.addEventListener('change', (e) => {
+                if (e.target.tagName === 'SELECT') {
+                    const filter = e.target.dataset.filter;
+                    const value = e.target.value;
+                    const filters = loadFilters();
+                    if (value) {
+                        filters.dropdown[filter] = value;
+                    } else {
+                        delete filters.dropdown[filter];
+                    }
+                    saveFilters(filters);
+                    applyFiltersAndRender(rows, filters);
+                }
+            });
+        }
+
+        // Function to apply filters and render the product list
+        function applyFiltersAndRender(rows, filters) {
+            const filtered = rows.filter(row => {
+                // Apply boolean filters
+                for (const filter of Object.keys(filters.boolean)) {
+                    // Check if the filter corresponds to a column with boolean values
+                    if (row[filter] !== '1') {
+                        return false;
+                    }
+                }
+                // Apply dropdown filters
+                for (const [filter, value] of Object.entries(filters.dropdown)) {
+                    if (filter === 'Month') {
+                        // Special handling for month filters
+                        if (value && row[value] !== '1') {
+                            return false;
+                        }
+                    } else if (filter === 'Menstrual cycle phase') {
+                        if (value && row[value] !== '1') {
+                            return false;
+                        }
+                    } else {
+                        if (value && row[filter] !== value) {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            });
+            renderProductList(filtered, rows[0]);
+        }
+
+        // Function to render the product list
+        function renderProductList(products, headersRow) {
+            const list = document.getElementById('product-list');
+            list.innerHTML = '';
+
+            products.forEach(product => {
+                const item = document.createElement('li');
+                item.classList.add('product-item');
+
+                const header = document.createElement('div');
+                header.classList.add('product-header');
+
+                const emoji = document.createElement('span');
+                emoji.classList.add('emoji');
+                emoji.textContent = product['emoji'] || '';
+
+                const name = document.createElement('span');
+                name.textContent = product['Product'] || '';
+
+                header.appendChild(emoji);
+                header.appendChild(name);
+                item.appendChild(header);
+
+                const details = document.createElement('div');
+                details.classList.add('product-details');
+
+                const table = document.createElement('table');
+                const tbody = document.createElement('tbody');
+
+                for (const [key, value] of Object.entries(product)) {
+                    if (['Product', 'emoji'].includes(key)) continue; // Skip main fields
+                    if (value === '0' || value === '') continue; // Skip false values
+
+                    const tr = document.createElement('tr');
+                    const th = document.createElement('th');
+                    th.textContent = key;
+                    const td = document.createElement('td');
+                    td.textContent = value;
+                    tr.appendChild(th);
+                    tr.appendChild(td);
+                    tbody.appendChild(tr);
+                }
+
+                table.appendChild(tbody);
+                details.appendChild(table);
+                item.appendChild(details);
+
+                // Toggle details on header click
+                header.addEventListener('click', () => {
+                    item.classList.toggle('expanded');
+                });
+
+                list.appendChild(item);
+            });
+        }
+    </script>
+</body>
+</html>

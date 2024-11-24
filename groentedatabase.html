@@ -1,0 +1,388 @@
+<!-- https://chatgpt.com/share/e/67424925-0094-800e-8453-ad2d2ac8749b -->
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>Groenten en Fruit Keuze</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        .filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .filter-group label {
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        select, button {
+            padding: 5px 10px;
+            font-size: 14px;
+        }
+        .toggle-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .toggle-button {
+            position: relative;
+            display: inline-block;
+        }
+        .toggle-button input {
+            display: none;
+        }
+        .toggle-button label {
+            cursor: pointer;
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: grey;
+            color: white;
+            transition: background-color 0.3s;
+            user-select: none;
+        }
+        .toggle-button input:checked + label {
+            background-color: #28a745; /* Groen als actief */
+        }
+        .toggle-button.inverse input:checked + label {
+            background-color: #dc3545; /* Rood voor inverse filters */
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Groenten en Fruit Keuze</h1>
+
+    <div class="filters">
+        <!-- Maand Filter -->
+        <div class="filter-group">
+            <label for="monthFilter">Selecteer Maand:</label>
+            <select id="monthFilter">
+                <option value="">Alle Maanden</option>
+                <option value="Januari">Januari</option>
+                <option value="Februari">Februari</option>
+                <option value="Maart">Maart</option>
+                <option value="April">April</option>
+                <option value="Mei">Mei</option>
+                <option value="Juni">Juni</option>
+                <option value="Juli">Juli</option>
+                <option value="Augustus">Augustus</option>
+                <option value="September">September</option>
+                <option value="Oktober">Oktober</option>
+                <option value="November">November</option>
+                <option value="December">December</option>
+            </select>
+        </div>
+
+        <!-- Cyclusfase Filter -->
+        <div class="filter-group">
+            <label for="phaseFilter">Selecteer Cyclusfase:</label>
+            <select id="phaseFilter">
+                <option value="">Alle Fasen</option>
+                <option value="Follicular">Follicular</option>
+                <option value="Ovulatory">Ovulatory</option>
+                <option value="Luteal">Luteal</option>
+                <option value="Menstrual">Menstrual</option>
+            </select>
+        </div>
+
+        <!-- Dieet Filters -->
+        <div class="filter-group">
+            <label>Dieet Filters:</label>
+            <div class="toggle-buttons">
+                <div class="toggle-button">
+                    <input type="checkbox" id="fodmapFilter">
+                    <label for="fodmapFilter">FODMAP</label>
+                </div>
+                <div class="toggle-button">
+                    <input type="checkbox" id="fodmapLightFilter">
+                    <label for="fodmapLightFilter">FODMAP-light</label>
+                </div>
+                <div class="toggle-button inverse">
+                    <input type="checkbox" id="dirtyFifteenFilter" checked>
+                    <label for="dirtyFifteenFilter">Dirty-Fifteen</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seizoen Filter (Maanden meerdere selecties) -->
+        <div class="filter-group">
+            <label for="seasonFilter">Seizoensgebonden Eten:</label>
+            <select id="seasonFilter">
+                <option value="">Alle Seizoenen</option>
+                <option value="Winter">Winter</option>
+                <option value="Lente">Lente</option>
+                <option value="Zomer">Zomer</option>
+                <option value="Herfst">Herfst</option>
+            </select>
+        </div>
+    </div>
+
+    <table id="productTable">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Soort</th>
+                <th>Lokaal</th>
+                <th>Follicular</th>
+                <th>Ovulatory</th>
+                <th>Luteal</th>
+                <th>Menstrual</th>
+                <th>FODMAP</th>
+                <th>FODMAP-light</th>
+                <th>Dirty-Fifteen</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Dynamisch ingevuld door JavaScript -->
+        </tbody>
+    </table>
+
+    <script>
+        // Hardcoded CSV data
+        const csvData = `
+Product;Soort;Januari;Februari;Maart;April;Mei;Juni;Juli;Augustus;September;Oktober;November;December;Lokaal;Follicular ;Ovulatory;Luteal;Menstrual;FODMAP;FODMAP-light;Dirty-Fifteen
+Aardappelen;Groente;1;1;1;1;1;1;1;1;1;1;1;1;1;;;;;2;;
+Aardpeer;Groente;1;1;1;;;;;;;1;1;1;1;;;;;0;;
+Andijvie;Groente;;;;1;1;1;1;1;1;1;1;1;1;;;;;2;;
+Artisjok;Groente;;;;;1;1;1;1;1;1;;;1;;;;;0;;
+Asperges;Groente;;;1;1;1;1;;;;;;;1;;1;;;;;
+Aubergine;Groente;;;1;1;1;1;1;1;1;1;;;1;;;;;1;;
+Augurken;Groente;;;;;;;1;1;1;;;;1;1;;;;;;
+Bimi;Groente;;;;1;1;1;1;1;1;1;;;1;;1;;;;;
+Bleekselderij;Grroente;;1;1;1;1;1;1;1;1;1;1;1;1;;;;1;1;;
+Bloemkool;Groente;;;;;1;1;1;1;1;1;1;;1;;;1;1;0;;
+Boerenkool;Groente;1;1;1;;;;;;;1;1;1;1;1;1;1;1;2;;
+Bosui;Groente;;;;;1;1;1;1;1;1;;;1;;;;;0;;
+Bospeen;Groente;;;;;1;1;1;1;1;1;;;1;;;;;2;;
+Broccoli;Groente;;;;;1;1;1;1;1;1;;;1;;1;1;1;1;;
+Champignons;Groente;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;;;0;;
+Chinese kool;Groente;;;;;;;1;1;1;1;1;;1;;;1;1;2;;
+Courgette;Groente;;;;;1;1;1;1;1;1;;;1;;;;;1;;
+Doperwten;Groente;;;;;1;1;1;;;;;;1;;1;;;1;;
+Kikkererwten;Groente;1;1;1;1;1;1;1;1;1;1;1;1;0;;1;;1;0;;
+Knoflook;Groente;;;;;1;1;1;1;;;;;1;;;;;0;;
+Knolselderij;Groente;1;1;1;1;1;1;1;1;1;1;1;1;1;;;;;2;;
+Komkommer;Groente;;;;;1;1;1;1;1;;;;1;;;;1;1;;
+Koolraap;Groente;1;1;1;1;1;1;;;;1;1;1;1;;;;;1;;
+Koolrabi;Groente;;;;;1;1;1;1;1;1;;;1;;1;;;;;
+Lente-ui;Groente;;;;;1;1;;;;;;;1;;;;;0;;
+Mais;Groente;;;;;;1;1;1;1;;;;1;;;;;1;;
+Paksoi;Groente;;;;1;1;1;1;1;1;1;1;1;1;;;1;1;1;;
+Paprika;Groente;;;;;;;;1;1;1;;;1;1;;;1;1;;
+Pastinaak;Groente;1;1;1;;;;;;;1;1;1;1;;;1;;2;;
+Peultjes;Groente;;;;;1;1;1;1;;;;;1;;;;;1;;
+Pompoen;Groente;1;1;1;;;;;1;1;1;1;1;1;1;;;1;0;;
+Prei;Groente;1;1;1;1;1;1;;;1;1;1;1;1;;;;;0;;
+Rabarber;Groente;;;1;1;1;1;1;;;;;;0;;;;;2;;
+Radijs;Groente;;;1;1;1;1;1;1;1;1;;;1;;;1;;2;;
+Rammenas;Groente;1;1;1;;;;;;;1;1;1;1;;;1;;2;;
+Rode biet;Groente;1;1;1;1;1;1;1;1;1;1;1;1;1;;;1;1;1;;
+Rode kool;Groente;1;1;1;;;;1;1;1;1;1;1;1;;;1;1;1;;
+Savooiekool;Groente;1;1;1;;;;1;1;1;1;1;1;1;;;1;1;1;;
+Schorseneren;Groente;1;1;1;;;;;;;1;1;1;1;;;;;;;
+Shiitake;Groente;;;;;1;1;1;1;1;1;;;1;1;;;;0;;
+Snijbiet;Groente;;;;;1;1;1;1;1;1;;;1;;;;1;1;;
+Snijbonen;Groente;;;;;;1;1;1;1;1;;;1;;;1;1;0;;
+Sopropo;Groente;;;;;;;1;1;1;1;;;0;;;;;0;;
+Sperziebonen;Groente;;;;;;1;1;1;1;1;;;1;;;1;1;1;;
+Spinazie;Groente;;;1;1;1;;;;1;1;1;;1;1;1;;1;1;;
+Spitskool;Groente;1;1;1;;;;;;1;1;1;1;1;;;1;1;;;
+Spliterwten (gedroogd);Groente;1;1;1;1;1;1;1;1;1;1;1;1;1;;1;1;1;0;;
+Spruitjes;Groente;1;1;1;;;;;;;1;1;1;1;;;1;1;1;;
+Stoofperen;Groente;1;;;;;;;;1;1;1;1;1;;;;;0;;
+Sugar snaps;Groente;;;;;1;1;1;;;;;;1;;;;;0;;
+Tauge;Groente;1;1;1;1;1;1;1;1;1;1;1;1;1;;;;;2;;
+Tomaat;Groente;;;;;;1;1;1;1;1;;;1;;1;;;1;;
+Tuinbonen;Groente;;;;;;1;1;;;;;;1;;;1;1;0;;
+Ui;Groente;1;1;1;1;1;;;;1;1;1;;1;;;;;0;;
+Rode ui;;;;;;;;1;1;1;;;;1;;;;;0;;
+Venkel;Groente;;;;;;1;1;1;1;1;;;1;;;;;1;;
+Witlof;Groente;1;1;1;;;;;;;1;1;1;1;;;;;2;;
+Witte bonen;Groente;;;;;;;;1;1;1;;;0;;;1;1;0;;
+Witte kool;Groente;1;1;1;;;;;;1;1;1;;1;;;1;1;1;;
+Wortels;Groente;1;1;1;1;1;1;1;1;1;1;1;1;1;1;;;1;2;;
+Zuurkool;Groente;1;1;1;;;;;;;1;1;1;1;;;1;1;;;
+Zoete aardappel;Groente;;;;;;;;;1;1;1;1;0;1;1;1;;1;;
+Aardbeien;Fruit;;;;;1;1;1;1;1;;;;1;1;;;1;1;;
+Ananas;Fruit;1;1;1;1;1;1;1;1;1;1;1;1;0;;;;;2;;
+Blauwe bessen;Fruit;;;;;1;1;1;1;1;;;;1;1;;;;1;;
+Bramen;Fruit;;;;;1;1;1;1;1;;;;1;;;;;0;;
+Cranberries;Fruit;1;1;1;1;;;;;0;;;;0;;;;;1;;
+Druiven;Fruit;;;;;;;;1;1;1;1;1;0;;;;;1;;
+Frambozen;Fruit;;;;;;1;1;1;1;;;;1;;1;;1;1;;
+Galiameloen;Fruit;;;;;1;1;1;1;1;1;1;1;0;;;;1;1;;
+Kersen;Fruit;;;;;1;1;1;1;;;;;1;;;;1;0;;
+Mango;Fruit;;;;1;1;1;1;1;1;1;1;1;0;;;;;0;;
+Rode bessen;Fruit;;;;;1;1;;;1;1;1;;1;;;;;;;
+Watermeloen;Fruit;;;;;1;1;1;1;1;1;;;0;;;;1;0;;
+Olijven;Fruit;1;1;1;1;1;1;1;1;1;1;1;1;0;;;;;2;;
+Abrikoos;Fruit;;;;;;1;1;1;1;1;1;1;0;;;;;0;;
+Appel;Fruit;1;1;1;1;1;1;1;1;1;1;1;1;1;;;1;;0;;
+Avocado;Fruit;1;1;1;1;1;1;1;1;1;1;1;1;0;1;1;;1;1;;
+Banaan;Fruit;1;1;1;1;1;1;1;1;1;1;1;1;0;;;;1;2;;
+Grapefruit;Fruit;1;1;1;1;1;1;1;1;1;1;1;1;0;;1;;1;1;;
+Citroen;Fruit;1;1;1;1;1;1;1;1;1;1;1;1;0;;;;1;2;;
+Kaki;Fruit;1;1;;;;;;;;;1;;0;;;;;0;;
+Kiwi;Fruit;1;1;1;1;1;1;1;1;1;1;1;1;0;;;;1;2;;
+Mandarijn;Fruit;1;1;1;1;1;1;1;1;1;1;1;1;0;;;;1;1;;
+Nectarine;Fruit;;;;;;1;1;1;1;;;;1;;;;;0;;
+Sinaasappel;Fruit;1;1;1;1;1;1;1;1;1;1;1;1;0;1;;;1;1;;
+Lychee;;1;1;;;;;;;;;;;0;;;;;0;;
+Limoen;Fruit;1;1;1;1;1;1;1;1;1;1;1;1;0;;;;1;2;;
+Peer;Fruit;1;1;1;1;1;1;1;1;1;1;1;1;1;;;;;0;;
+Perzik;Fruit;;;;;;1;1;1;1;;;;0;;;;1;0;;
+Pruim;Fruit;;;;;;1;1;1;1;;;;1;;;;;0;;
+Vijgen;Fruit;;;;;;1;1;1;1;;;;1;;;;;0;;
+Dadels;Fruit;;;;;;;;;1;1;1;;0;;;;;0;;
+`;
+
+        // Functie om CSV te parsen
+        function parseCSV(text) {
+            const lines = text.trim().split('\n');
+            const headers = lines[0].split(';').map(h => h.trim());
+            const data = lines.slice(1).map(line => {
+                const values = line.split(';').map(v => v.trim());
+                const obj = {};
+                headers.forEach((header, index) => {
+                    obj[header] = values[index];
+                });
+                return obj;
+            });
+            return data;
+        }
+
+        // Functie om data te laden en weer te geven
+        function loadAndDisplayData() {
+            const data = parseCSV(csvData);
+            window.productData = data; // Opslaan voor filters
+            displayData(data);
+        }
+
+        // Functie om data te tonen in de tabel
+        function displayData(data) {
+            const tbody = document.querySelector('#productTable tbody');
+            tbody.innerHTML = ''; // Clear bestaande data
+
+            data.forEach(item => {
+                const tr = document.createElement('tr');
+
+                tr.innerHTML = `
+                    <td>${item.Product}</td>
+                    <td>${item.Soort}</td>
+                    <td>${item.Lokaal || '-'}</td>
+                    <td>${item.Follicular || '-'}</td>
+                    <td>${item.Ovulatory || '-'}</td>
+                    <td>${item.Luteal || '-'}</td>
+                    <td>${item.Menstrual || '-'}</td>
+                    <td>${item.FODMAP || '-'}</td>
+                    <td>${item['FODMAP-light'] || '-'}</td>
+                    <td>${item['Dirty-Fifteen'] || '-'}</td>
+                `;
+
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Functie om filters toe te passen
+        function applyFilters() {
+            const month = document.getElementById('monthFilter').value;
+            const phase = document.getElementById('phaseFilter').value;
+            const fodmap = document.getElementById('fodmapFilter').checked;
+            const fodmapLight = document.getElementById('fodmapLightFilter').checked;
+            const dirtyFifteen = document.getElementById('dirtyFifteenFilter').checked;
+            const season = document.getElementById('seasonFilter').value;
+
+            const filtered = window.productData.filter(item => {
+                // Filter op maand
+                if (month && item[month] !== '1') return false;
+
+                // Filter op cyclusfase
+                if (phase && !item[phase]) return false;
+
+                // Filter op dieet
+                if (fodmap && item.FODMAP !== '1') return false;
+                if (fodmapLight && item['FODMAP-light'] !== '1') return false;
+
+                // Filter op Dirty-Fifteen (inverse)
+                if (dirtyFifteen) {
+                    // Als filter actief is, toon items die bij Dirty-Fifteen horen
+                    if (item['Dirty-Fifteen'] !== '1') return false;
+                } else {
+                    // Als filter niet actief is, toon items die NIET bij Dirty-Fifteen horen
+                    if (item['Dirty-Fifteen'] === '1') return false;
+                }
+
+                // Filter op seizoen
+                if (season) {
+                    const seasonMonths = getMonthsBySeason(season);
+                    const hasMonth = seasonMonths.some(m => item[m] === '1');
+                    if (!hasMonth) return false;
+                }
+
+                return true;
+            });
+
+            displayData(filtered);
+        }
+
+        // Functie om maanden per seizoen te bepalen
+        function getMonthsBySeason(season) {
+            switch(season) {
+                case 'Winter':
+                    return ['December', 'Januari', 'Februari'];
+                case 'Lente':
+                    return ['Maart', 'April', 'Mei'];
+                case 'Zomer':
+                    return ['Juni', 'Juli', 'Augustus'];
+                case 'Herfst':
+                    return ['September', 'Oktober', 'November'];
+                default:
+                    return [];
+            }
+        }
+
+        // Event listeners voor filters
+        function setupFilters() {
+            document.getElementById('monthFilter').addEventListener('change', applyFilters);
+            document.getElementById('phaseFilter').addEventListener('change', applyFilters);
+            document.getElementById('fodmapFilter').addEventListener('change', applyFilters);
+            document.getElementById('fodmapLightFilter').addEventListener('change', applyFilters);
+            document.getElementById('dirtyFifteenFilter').addEventListener('change', applyFilters);
+            document.getElementById('seasonFilter').addEventListener('change', applyFilters);
+        }
+
+        // Initialisatie
+        window.onload = function() {
+            loadAndDisplayData();
+            setupFilters();
+        };
+    </script>
+
+</body>
+</html>
